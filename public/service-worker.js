@@ -10,8 +10,9 @@ const staticFilesToPreCache = [
     "/",
     "/index.html",
     "/index.js",
+    "/db.js",
     "/styles.css",
-    "/manifest.webmanifest",
+    "/manifest.webmanifest"
 ].concat(iconFiles);
 
 
@@ -47,15 +48,14 @@ self.addEventListener("activate", function(evt) {
 
 // fetch
 self.addEventListener("fetch", function(evt) {
-  const {url} = evt.request;
-  if (url.includes("/all") || url.includes("/find")) {
+  if (evt.request.url.includes("/api/transaction")) {
     evt.respondWith(
       caches.open(DATA_CACHE_NAME).then(cache => {
         return fetch(evt.request)
           .then(response => {
             // If the response was good, clone it and store it in the cache.
             if (response.status === 200) {
-              cache.put(evt.request, response.clone());
+              cache.put(evt.request.url, response.clone());
             }
 
             return response;
@@ -66,14 +66,12 @@ self.addEventListener("fetch", function(evt) {
           });
       }).catch(err => console.log(err))
     );
-  } else {
+    return;
+  }
     // respond from static cache, request is not for /api/*
     evt.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        return cache.match(evt.request).then(response => {
-          return response || fetch(evt.request);
-        });
+      caches.match(evt.request).then(function (response) {
+        return response || fetch(evt.request);
       })
     );
-  }
-});
+  });
